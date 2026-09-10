@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NovelAd Engine - Universal Creative Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS for Excel/CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Mammoth.js for Word .docx parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-hidden">
+
+  <!-- Top Navigation Bar -->
+  <header class="h-14 border-b border-slate-800 bg-slate-950/80 backdrop-blur px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-rose-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
+        ⚡
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-wide uppercase text-white flex items-center gap-2">
+          NovelAd Studio <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">OMNI 5-VARIANTS</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">High-CTR Ad Copy Transformer (Meta / TikTok / AppLovin)</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+      <button id="openApiModalBtn" class="flex items-center space-x-1.5 text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-md transition-all">
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <span>API / 本地 Ollama 配置</span>
+        <span id="apiConfigDot" class="w-1.5 h-1.5 rounded-full bg-slate-500 ml-1"></span>
+      </button>
+
+      <div class="hidden sm:flex items-center space-x-2 text-xs text-slate-400 border-l border-slate-800 pl-3">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Ad Target: 200–300 Words</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Split Workspace -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- LEFT PANEL: Universal Inputs & File Drag -->
+    <section class="w-full lg:w-[42%] h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col bg-slate-900/50">
+      
+      <!-- Top Control Bar -->
+      <div class="p-4 border-b border-slate-800/80 bg-slate-950/30 grid grid-cols-3 gap-3 shrink-0">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span>网文题材</span>
+            <span id="detectedGenrePill" class="hidden text-[9px] text-indigo-300 font-mono"></span>
+          </label>
+          <select id="genreSelect" class="w-full text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="auto" selected>🤖 智能自动提取 (Auto-Detect)</option>
+            <option value="werewolf">狼人 / 破镜重圆 (Werewolf / Alpha)</option>
+            <option value="billionaire">豪门总裁 / 契约婚约 (Billionaire)</option>
+            <option value="mafia">黑帮病娇 / 强取豪夺 (Mafia / Dark)</option>
+            <option value="urban">都市兵王 / 战神赘婿 (Urban / God)</option>
+            <option value="revenge">真假千金 / 马甲打脸 (Heiress / Revenge)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">投放渠道</label>
+          <select id="channelSelect" class="w-full text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="meta">Meta (Facebook Feed / 情绪长文案)</option>
+            <option value="tiktok">TikTok (短平快 / 视听强冲击)</option>
+            <option value="applovin">AppLovin (高唤起 / Playable Endcard)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">主攻文案基调</label>
+          <select id="toneSelect" class="w-full text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="angst">极限虐心 / 弃婴绝境 (Pure Angst)</option>
+            <option value="face-slap">极致打脸 / 马甲狂掉 (Hardcore Face-Slap)</option>
+            <option value="obsession">病娇支配 / 强取豪夺 (Dark Obsession)</option>
+            <option value="groveling">追妻火葬场 / 下跪悔恨 (Groveling & Regret)</option>
+            <option value="secret-baby">致命反差 / 带球跑路 (Secret Baby & Contrast)</option>
+            <option value="forbidden">禁忌拉扯 / 宿命羁绊 (Forbidden Desire)</option>
+            <option value="power">战神出渊 / 终极反杀 (Power Fantasy)</option>
+            <option value="cold-revenge">双面间谍 / 高智复仇 (Cold Revenge)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- File Dropzone & Editor Container -->
+      <div class="flex-1 flex flex-col p-4 space-y-3 min-h-0 overflow-y-auto">
+        <!-- Universal Drag & Drop Area -->
+        <div id="dropzone" class="border border-dashed border-slate-700 hover:border-indigo-500/70 rounded-lg p-3 text-center transition-colors cursor-pointer bg-slate-950/20">
+          <input type="file" id="fileInput" accept=".txt,.md,.docx,.xlsx,.xls,.csv,.json" class="hidden">
+          <div class="flex items-center justify-center space-x-2 text-slate-400 text-xs">
+            <svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <span>拖拽支持 <b>.txt / .md / .docx / .xlsx / .csv / .json</b>，或 <span class="text-indigo-400 underline">浏览文件</span></span>
+          </div>
+        </div>
+
+        <!-- Raw Text Editor -->
+        <div class="flex-1 flex flex-col min-h-[160px] relative">
+          <textarea id="rawText" placeholder="在此粘贴小说正文、剧本大纲或拖拽上传多格式文件（支持中/英文正文、分镜表格等）..." class="w-full flex-1 bg-slate-950/60 border border-slate-800 rounded-lg p-3.5 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 leading-relaxed resize-none"></textarea>
+          
+          <div class="absolute bottom-2.5 right-3 text-[11px] text-slate-400 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-800 flex items-center space-x-2">
+            <span id="detectedGenreBadge" class="text-indigo-400 hidden font-medium"></span>
+            <span>字符数: <span id="rawCount">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Action CTA -->
+      <div class="p-4 border-t border-slate-800/80 bg-slate-950/50 flex items-center justify-between shrink-0">
+        <button id="clearBtn" class="text-xs text-slate-400 hover:text-slate-200 transition-colors">清空内容</button>
+        <button id="generateBtn" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white px-5 py-2.5 rounded-md font-medium text-xs sm:text-sm shadow-lg shadow-indigo-600/25 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>智能重构 5 版投放文案</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: 5 Variations Delivery -->
+    <section class="w-full lg:w-[58%] h-1/2 lg:h-full flex flex-col bg-slate-950/60">
+      
+      <!-- Output Header with Tabs -->
+      <div class="p-3 px-6 border-b border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <!-- 5 Tabs -->
+        <div class="flex items-center space-x-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800" id="versionTabs">
+          <button data-ver="0" class="tab-btn px-3 py-1 rounded text-xs font-semibold bg-indigo-600 text-white transition-all">V1 (核心撕扯)</button>
+          <button data-ver="1" class="tab-btn px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">V2 (极度反差)</button>
+          <button data-ver="2" class="tab-btn px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">V3 (偏执强控)</button>
+          <button data-ver="3" class="tab-btn px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">V4 (悔恨下跪)</button>
+          <button data-ver="4" class="tab-btn px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">V5 (绝爽打脸)</button>
+        </div>
+
+        <!-- Tooling Action Buttons -->
+        <div class="flex items-center space-x-2">
+          <div id="wordCountBadge" class="text-[11px] font-mono px-2 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+            <span>0</span> 英文词
+          </div>
+          <button id="copyActiveBtn" title="复制当前版本" class="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 px-3 py-1 rounded text-xs font-medium transition-all">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>复制此版</span>
+          </button>
+          <button id="copyAllBtn" title="复制所有5个版本" class="flex items-center space-x-1 bg-indigo-950/60 hover:bg-indigo-900/80 active:scale-95 text-indigo-300 border border-indigo-800/60 px-3 py-1 rounded text-xs font-medium transition-all">
+            <span>导出全部 5 版</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div id="outputContainer" class="flex-1 p-6 space-y-4 overflow-y-auto">
+
+        <!-- Default Empty State -->
+        <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-500 text-center py-16">
+          <div class="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+          </div>
+          <p class="text-sm font-medium text-slate-400">已就绪，等待解析章节</p>
+          <p class="text-xs text-slate-600 max-w-sm mt-1">在左侧上传或粘贴章节文本，将按 5 维标准精准输出 5 组 200-300 词高转化买量文案。</p>
+        </div>
+
+        <!-- Structured Result View -->
+        <div id="resultCard" class="hidden space-y-4">
+          
+          <!-- 1. 目标受众 -->
+          <div class="rounded-lg border border-slate-800 bg-slate-900/70 p-3.5">
+            <div class="flex items-center space-x-2 mb-1.5">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400">1. 目标受众 (Target Audience)</h3>
+            </div>
+            <p id="audienceText" class="text-xs text-slate-300 leading-relaxed"></p>
+          </div>
+
+          <!-- 2. 核心心理需求拆解 -->
+          <div class="rounded-lg border border-slate-800 bg-slate-900/70 p-3.5">
+            <div class="flex items-center space-x-2 mb-1.5">
+              <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400">2. 核心心理需求拆解 (Psychological Triggers)</h3>
+            </div>
+            <p id="psychologyText" class="text-xs text-slate-300 leading-relaxed"></p>
+          </div>
+
+          <!-- 3. 信息流钩子（中英双语） -->
+          <div class="rounded-lg border border-amber-500/30 bg-amber-950/10 p-3.5 space-y-2">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400">3. 信息流前 3 秒黄金钩子 (Feed Hook / 3-Sec Stop Rate)</h3>
+            </div>
+            <!-- English Hook -->
+            <div>
+              <span class="text-[10px] uppercase font-semibold text-slate-400">English Hook:</span>
+              <p id="hookEnText" class="text-xs sm:text-sm font-medium text-amber-200 leading-relaxed mt-0.5"></p>
+            </div>
+            <!-- Chinese Hook -->
+            <div class="pt-1 border-t border-amber-500/10">
+              <span class="text-[10px] uppercase font-semibold text-slate-400">中文黄金停滑句:</span>
+              <p id="hookZhText" class="text-xs sm:text-sm font-medium text-amber-300/90 leading-relaxed mt-0.5"></p>
+            </div>
+          </div>
+
+          <!-- 4. 读者继续看的问题 -->
+          <div class="rounded-lg border border-rose-500/30 bg-rose-950/10 p-3.5">
+            <div class="flex items-center space-x-2 mb-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">4. 读者继续看的问题 (Reader's Core Question / Click Driver)</h3>
+            </div>
+            <p id="questionText" class="text-xs sm:text-sm text-rose-200/90 leading-relaxed"></p>
+          </div>
+
+          <!-- 5. 文案双语交付 -->
+          <div class="rounded-lg border border-indigo-500/40 bg-indigo-950/15 p-4 space-y-3.5">
+            <div class="flex items-center justify-between border-b border-indigo-500/20 pb-2">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">5. 文案双语交付 (Bilingual Delivery)</h3>
+              </div>
+              <span id="compliancePill" class="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-700/50">200-300 Words Compliant</span>
+            </div>
+
+            <!-- English Body (200-300 words) -->
+            <div>
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>English Feed Copy (Ad Body)</span>
+                <span id="enWordCount" class="font-mono text-indigo-300">0 words</span>
+              </div>
+              <div id="copyEn" class="bg-slate-950/70 border border-slate-800 rounded-md p-3 text-xs sm:text-sm text-slate-200 leading-relaxed font-sans select-text whitespace-pre-line"></div>
+            </div>
+
+            <!-- Chinese Body -->
+            <div>
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                <span>中文对照精翻 (内审/分镜参考)</span>
+              </div>
+              <div id="copyZh" class="bg-slate-950/50 border border-slate-800/80 rounded-md p-3 text-xs text-slate-400 leading-relaxed select-text whitespace-pre-line"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal: API Settings (支持在线 API 与 本地 Ollama) -->
+  <div id="apiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl transition-all">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="text-indigo-400 text-base">⚙️</span>
+          <h2 class="text-sm font-bold text-white tracking-wide">API / 本地 Ollama 模型配置</h2>
+        </div>
+        <button id="closeApiModalBtn" class="text-slate-400 hover:text-white transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">API Base URL</label>
+          <input type="text" id="apiBaseUrl" placeholder="本地填: http://localhost:11434/v1 或在线 API" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">API Key (本地 Ollama 填 ollama 即可)</label>
+          <input type="password" id="apiKey" placeholder="sk-... 或 本地填 ollama" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Model Name</label>
+          <input type="text" id="apiModel" placeholder="如: qwen2.5:14b / qwen2.5:7b / gpt-4o" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono">
+        </div>
+
+        <div class="p-3 bg-slate-950/60 rounded-lg border border-slate-800 text-[11px] text-slate-400 space-y-1">
+          <p class="font-medium text-slate-300">💡 推荐快捷配置：</p>
+          <p>• <b>Mac 本地 M4 离线部署</b>：URL 填 <code class="text-indigo-400">http://localhost:11434/v1</code>，Key 填 <code class="text-indigo-400">ollama</code>，Model 填 <code class="text-indigo-400">qwen2.5:14b</code></p>
+          <p>• <b>留空</b>：默认使用内置免 API 的顶级高转化实战仿真文案库。</p>
+        </div>
+      </div>
+
+      <div class="p-4 px-6 border-t border-slate-800/80 bg-slate-950/40 flex justify-end space-x-3">
+        <button id="saveApiSettingsBtn" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-indigo-600 text-white text-xs px-4 py-2.5 rounded-lg shadow-xl shadow-indigo-500/30 flex items-center space-x-2 translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50">
+    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <span id="toastMsg">已复制到剪贴板！</span>
+  </div>
+
+  <script>
+    // State Variables
+    let activeIndex = 0;
+    let generatedVariations = [];
+    let detectedGenre = "werewolf";
+
+    // DOM Elements
+    const rawTextInput = document.getElementById('rawText');
+    const rawCountEl = document.getElementById('rawCount');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const clearBtn = document.getElementById('clearBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const emptyState = document.getElementById('emptyState');
+    const resultCard = document.getElementById('resultCard');
+    const copyActiveBtn = document.getElementById('copyActiveBtn');
+    const copyAllBtn = document.getElementById('copyAllBtn');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toastMsg');
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const genreSelect = document.getElementById('genreSelect');
+    const detectedGenreBadge = document.getElementById('detectedGenreBadge');
+    const detectedGenrePill = document.getElementById('detectedGenrePill');
+
+    // Display Fields
+    const audienceText = document.getElementById('audienceText');
+    const psychologyText = document.getElementById('psychologyText');
+    const hookEnText = document.getElementById('hookEnText');
+    const hookZhText = document.getElementById('hookZhText');
+    const questionText = document.getElementById('questionText');
+    const copyEn = document.getElementById('copyEn');
+    const copyZh = document.getElementById('copyZh');
+    const enWordCount = document.getElementById('enWordCount');
+    const wordCountBadge = document.getElementById('wordCountBadge');
+    const compliancePill = document.getElementById('compliancePill');
+
+    // API Modal Elements
+    const openApiModalBtn = document.getElementById('openApiModalBtn');
+    const closeApiModalBtn = document.getElementById('closeApiModalBtn');
+    const apiModal = document.getElementById('apiModal');
+    const saveApiSettingsBtn = document.getElementById('saveApiSettingsBtn');
+    const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const apiModelInput = document.getElementById('apiModel');
+    const apiConfigDot = document.getElementById('apiConfigDot');
+
+    // Load API settings from LocalStorage
+    function loadApiSettings() {
+      const url = localStorage.getItem('novelad_api_url') || '';
+      const key = localStorage.getItem('novelad_api_key') || '';
+      const model = localStorage.getItem('novelad_api_model') || '';
+
+      apiBaseUrlInput.value = url;
+      apiKeyInput.value = key;
+      apiModelInput.value = model;
+
+      if (url.trim() || key.trim()) {
+        apiConfigDot.classList.remove('bg-slate-500');
+        apiConfigDot.classList.add('bg-emerald-400');
+      } else {
+        apiConfigDot.classList.remove('bg-emerald-400');
+        apiConfigDot.classList.add('bg-slate-500');
+      }
+    }
+
+    openApiModalBtn.addEventListener('click', () => apiModal.classList.remove('hidden'));
+    closeApiModalBtn.addEventListener('click', () => apiModal.classList.add('hidden'));
+    saveApiSettingsBtn.addEventListener('click', () => {
+      localStorage.setItem('novelad_api_url', apiBaseUrlInput.value.trim());
+      localStorage.setItem('novelad_api_key', apiKeyInput.value.trim());
+      localStorage.setItem('novelad_api_model', apiModelInput.value.trim());
+      apiModal.classList.add('hidden');
+      loadApiSettings();
+      showToast('API 设置已保存');
+    });
+
+    // Word Count Utility
+    function countWords(str) {
+      if (!str) return 0;
+      const clean = str.trim().replace(/[^\w\s-]/g, ' ');
+      const words = clean.match(/\b[A-Za-z0-9'-]+\b/g);
+      return words ? words.length : 0;
+    }
+
+    // Toast Notification
+    function showToast(msg = '已复制到剪贴板！') {
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Genre Auto-Detection Rule Engine
+    function autoDetectGenre(text) {
+      const lower = text.toLowerCase();
+      const scores = {
+        werewolf: (lower.match(/alpha|luna|mate|pack|wolf|lycan|rogue|pup|mate bond|shift/g) || []).length * 2,
+        billionaire: (lower.match(/billionaire|contract marriage|divorce|ceo|penthouse|heiress|black card|trust fund|charity/g) || []).length * 2,
+        mafia: (lower.match(/mafia|don|bratva|cartel|syndicate|gun|hostage|revolver|blood oath|boss/g) || []).length * 2,
+        urban: (lower.match(/dragon lord|warrior|mercenary|pentagon|warship|temple|master|son-in-law|hospital|slap/g) || []).length * 2,
+        revenge: (lower.match(/adopted sister|real daughter|scalpel|doctor|fake heiress|biological|fiancée|slap/g) || []).length * 2,
+      };
+
+      if (text.includes('狼人') || text.includes('伴侣') || text.includes('月神') || text.includes('幼崽')) scores.werewolf += 5;
+      if (text.includes('离婚协议') || text.includes('亿万') || text.includes('总裁') || text.includes('豪门')) scores.billionaire += 5;
+      if (text.includes('教父') || text.includes('黑手党') || text.includes('黑帮') || text.includes('偏执')) scores.mafia += 5;
+      if (text.includes('赘婿') || text.includes('龙王') || text.includes('战神') || text.includes('神医') || text.includes('下跪')) scores.urban += 5;
+      if (text.includes('真假千金') || text.includes('养女') || text.includes('亲生父母') || text.includes('马甲')) scores.revenge += 5;
+
+      let topGenre = 'werewolf';
+      let maxScore = -1;
+      for (const [key, val] of Object.entries(scores)) {
+        if (val > maxScore) {
+          maxScore = val;
+          topGenre = key;
+        }
+      }
+
+      const mapNames = {
+        werewolf: '狼人 / 破镜重圆 (Werewolf)',
+        billionaire: '豪门总裁 / 契约婚约 (Billionaire)',
+        mafia: '黑帮病娇 / 强取豪夺 (Mafia)',
+        urban: '都市兵王 / 战神赘婿 (Urban)',
+        revenge: '真假千金 / 马甲打脸 (Revenge)',
+      };
+
+      if (maxScore > 0) {
+        detectedGenreBadge.textContent = `提取题材: ${mapNames[topGenre]}`;
+        detectedGenreBadge.classList.remove('hidden');
+        detectedGenrePill.textContent = `AI识别: ${topGenre}`;
+        detectedGenrePill.classList.remove('hidden');
+      } else {
+        detectedGenreBadge.classList.add('hidden');
+        detectedGenrePill.classList.add('hidden');
+      }
+
+      return topGenre;
+    }
+
+    rawTextInput.addEventListener('input', () => {
+      rawCountEl.textContent = rawTextInput.value.length;
+      if (genreSelect.value === 'auto') {
+        detectedGenre = autoDetectGenre(rawTextInput.value);
+      }
+    });
+
+    genreSelect.addEventListener('change', () => {
+      if (genreSelect.value === 'auto') {
+        detectedGenre = autoDetectGenre(rawTextInput.value);
+      } else {
+        detectedGenre = genreSelect.value;
+        detectedGenreBadge.classList.add('hidden');
+        detectedGenrePill.classList.add('hidden');
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      rawTextInput.value = '';
+      rawCountEl.textContent = '0';
+      detectedGenreBadge.classList.add('hidden');
+      detectedGenrePill.classList.add('hidden');
+    });
+
+    // Multi-Format File Reader
+    async function processFile(file) {
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      try {
+        if (ext === 'docx') {
+          const arrayBuffer = await file.arrayBuffer();
+          const res = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+          rawTextInput.value = res.value;
+        } else if (['xlsx', 'xls', 'csv'].includes(ext)) {
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: 'array' });
+          let fullTableText = "";
+          workbook.SheetNames.forEach(sheetName => {
+            const sheet = workbook.Sheets[sheetName];
+            const text = XLSX.utils.sheet_to_txt(sheet);
+            fullTableText += `[Sheet: ${sheetName}]\n${text}\n\n`;
+          });
+          rawTextInput.value = fullTableText.trim();
+        } else {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            rawTextInput.value = event.target.result;
+            rawCountEl.textContent = rawTextInput.value.length;
+            if (genreSelect.value === 'auto') detectedGenre = autoDetectGenre(rawTextInput.value);
+          };
+          reader.readAsText(file);
+          return;
+        }
+
+        rawCountEl.textContent = rawTextInput.value.length;
+        if (genreSelect.value === 'auto') detectedGenre = autoDetectGenre(rawTextInput.value);
+        showToast(`已成功解析文件: ${file.name}`);
+      } catch (err) {
+        console.error(err);
+        alert('文件解析失败，请检查文件格式或直接复制文本粘贴。');
+      }
+    }
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => processFile(e.target.files[0]));
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/20'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+      if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+    });
+
+    // Render Active Variation Card
+    function renderVariation(index) {
+      if (!generatedVariations || !generatedVariations[index]) return;
+      const item = generatedVariations[index];
+
+      audienceText.textContent = item.audience;
+      psychologyText.textContent = item.psychology;
+      hookEnText.textContent = item.hookEn;
+      hookZhText.textContent = item.hookZh;
+      questionText.textContent = item.question;
+      copyEn.textContent = item.copyEn;
+      copyZh.textContent = item.copyZh;
+
+      const words = countWords(item.copyEn);
+      enWordCount.textContent = `${words} 词`;
+      wordCountBadge.querySelector('span').textContent = words;
+      copyActiveBtn.querySelector('span').textContent = `复制 V${index + 1}`;
+
+      if (words >= 200 && words <= 300) {
+        compliancePill.className = "text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950/80 text-emerald-400 border border-emerald-700/50";
+        compliancePill.textContent = `${words} Words (200-300 Compliant)`;
+      } else {
+        compliancePill.className = "text-[10px] px-2 py-0.5 rounded font-mono bg-amber-950/80 text-amber-400 border border-amber-700/50";
+        compliancePill.textContent = `${words} Words (Check Target)`;
+      }
+
+      tabButtons.forEach((btn, idx) => {
+        if (idx === index) {
+          btn.className = "tab-btn px-3 py-1 rounded text-xs font-semibold bg-indigo-600 text-white transition-all";
+        } else {
+          btn.className = "tab-btn px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition-all";
+        }
+      });
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activeIndex = parseInt(btn.dataset.ver, 10);
+        renderVariation(activeIndex);
+      });
+    });
+
+    // Copy Handlers
+    copyActiveBtn.addEventListener('click', () => {
+      if (!generatedVariations[activeIndex]) return;
+      const item = generatedVariations[activeIndex];
+      const textToCopy = `【版本 V${activeIndex + 1}】\n1. 目标受众：\n${item.audience}\n\n2. 核心心理需求拆解：\n${item.psychology}\n\n3. 信息流钩子：\n[English Hook]\n${item.hookEn}\n[中文停滑句]\n${item.hookZh}\n\n4. 读者继续看的问题：\n${item.question}\n\n5. 文案双语交付：\n[English Copy - ${countWords(item.copyEn)} words]\n${item.copyEn}\n\n[中文对照]\n${item.copyZh}`;
+      navigator.clipboard.writeText(textToCopy).then(() => showToast(`已复制版本 V${activeIndex + 1}`));
+    });
+
+    copyAllBtn.addEventListener('click', () => {
+      if (!generatedVariations.length) return;
+      let fullExport = "";
+      generatedVariations.forEach((item, idx) => {
+        fullExport += `========================================\n【Version ${idx + 1}】\n========================================\n1. 目标受众：\n${item.audience}\n\n2. 核心心理需求拆解：\n${item.psychology}\n\n3. 信息流钩子：\n[English Hook]\n${item.hookEn}\n[中文停滑句]\n${item.hookZh}\n\n4. 读者继续看的问题：\n${item.question}\n\n5. 文案双语交付：\n[English Copy - ${countWords(item.copyEn)} words]\n${item.copyEn}\n\n[中文对照]\n${item.copyZh}\n\n\n`;
+      });
+      navigator.clipboard.writeText(fullExport).then(() => showToast('5 版文案全部导出已复制！'));
+    });
+
+    // Helper: Safely extract JSON from model output
+    function extractJsonSafely(text) {
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        // Try regex matching between brackets
+        const match = text.match(/\[[\s\S]*\]/);
+        if (match) {
+          try {
+            return JSON.parse(match[0]);
+          } catch (e2) {
+            // Further fallback: clean markdown code blocks
+            const clean = match[0].replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(clean);
+          }
+        }
+        throw new Error("无法从模型回复中提取标准 JSON 格式，请检查模型输出。");
+      }
+    }
+
+    // Real API Call (Ollama / OpenAI Compatible) or Built-in Simulation Engine
+    async function executeGeneration(payload) {
+      const apiKey = localStorage.getItem('novelad_api_key') || '';
+      const apiBase = localStorage.getItem('novelad_api_url') || '';
+      const apiModel = localStorage.getItem('novelad_api_model') || '';
+
+      // If user configured URL or Key, trigger OpenAI compatible chat endpoint
+      if (apiBase.trim()) {
+        const systemPrompt = `You are an elite overseas webnovel ad creative director specializing in Meta and TikTok paid campaigns.
+Your mission: Analyze the novel text and produce exactly 5 distinct, high-converting ad variations in a valid JSON array.
+
+Strict Requirements:
+1. Output MUST be ONLY a valid JSON array containing 5 objects. No markdown code blocks, no intro, no chit-chat.
+2. JSON Object Schema:
+[
+  {
+    "audience": "Target audience description in Chinese",
+    "psychology": "Core psychological trigger breakdown in Chinese",
+    "hookEn": "First 3-sec English hook sentence",
+    "hookZh": "First 3-sec Chinese translation of hook",
+    "question": "Core question driving readers to click in Chinese",
+    "copyEn": "Full English Ad Copy body (MUST BE STRICTLY 200 TO 300 WORDS)",
+    "copyZh": "Chinese translation of copyEn"
+  },
+  ... (total 5 objects)
+]
+3. "copyEn" must follow the formula: The Hook (extreme conflict/rejection) + The Stakes (angst/power shift) + The Cliffhanger & CTA. Word count must be strictly 200-300 English words.`;
+
+        const userPrompt = `Genre: ${payload.genre}\nPlatform: ${payload.channel}\nTone: ${payload.tone}\n\nChapter Content:\n${payload.text.slice(0, 7000)}`;
+
+        const cleanBase = apiBase.replace(/\/+$/, '');
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey.trim() && apiKey.trim().toLowerCase() !== 'ollama') {
+          headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+        }
+
+        const res = await fetch(`${cleanBase}/chat/completions`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            model: apiModel.trim() || 'qwen2.5:14b',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.7
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`API HTTP Error: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        const content = data.choices[0].message.content.trim();
+        return extractJsonSafely(content);
+      }
+
+      // Default Built-in High-Converting Fallback
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const g = payload.genre;
+          if (g === 'billionaire') {
+            resolve([
+              {
+                audience: "TikTok / Meta 偏好豪门协议婚姻、真假千金、隐形女首富打脸套路的年轻女性读者。",
+                psychology: "极度反差与扮猪吃虎带来的爽感释放。先压抑后爆发，看着狂妄自大的男主因轻蔑前妻而导致商业帝国瞬间崩溃。",
+                hookEn: `"Sign the divorce papers and take the twenty thousand dollars. My real heiress is returning from Paris, and you are not worthy to clean her bathroom!"`,
+                hookZh: `“签了这份离婚协议，拿上两万块钱滚蛋！我真正的未婚妻今晚回国，你连给她刷马桶都不配！”`,
+                question: "男主自以为甩掉了寄生虫前妻，但他是否知道他引以为傲的百亿上市集团，全部建立在前妻隐藏的海外信托基金之上？",
+                copyEn: `"Sign the divorce papers and take the twenty thousand dollars. My real heiress is returning from Paris, and you are not worthy to clean her bathroom!" Damien scoffed, hurling the contract into Sophia's face.\n\nFor three agonizing years, Sophia had disguised her identity as the sovereign commander of the Vance Global Dynasty, willingly playing the penniless, obedient housewife who scrubbed his marble floors and tolerated his arrogant mother's daily insults. She had given up her empire's luxuries out of gratitude for a childhood favor, silently injecting three billion dollars into Damien's failing startup through encrypted Swiss proxy accounts he never understood.\n\nNow, Damien stood smirking beside his glamorous socialite mistress, openly flaunting their luxury engagement party inside the very penthouse Sophia secretly owned. He truly believed Sophia was a pathetic orphan who would starve without his monthly charity.\n\nSophia didn't shed a single tear. She quietly slipped off the five-dollar silver band, dropped it right into his glass of vintage champagne, and pulled out an obsidian satellite phone.\n\n"Mr. Vance, this is your chief trustee speaking," she whispered into the mic. "Terminate the Sterling Group's unlimited credit line immediately. Liquidate all assets and call in the thirty-billion-dollar debt before sunrise."\n\nWithin five seconds, every executive phone in Damien's pocket began screeching in panic. [Tap to Read Her Cold Revenge]`,
+                copyZh: `“签了这份离婚协议，拿上两万块钱滚蛋。我真正的未婚妻今晚从巴黎飞回来，你连给她刷马桶都不配。”达米安嘲弄地把合同甩在索菲亚脸上。\n\n在隐忍痛苦的三年里，索菲亚隐藏了自己作为万斯全球财阀唯一掌舵人的身份，甘愿扮演一个身无分文、温顺听话的家庭主妇，每天擦洗大理石地板，忍受他母亲刻薄的羞辱。仅仅为了多年前的一个人情承诺，她在幕后通过瑞士加密匿名账户给达米安濒临破产的公司注资了三十亿美元。\n\n现在，达米安搂着光鲜亮丽的名媛小三冷嘲热讽，在索菲亚名下的顶层公寓里大张旗鼓地举办订婚派对。他真以为索菲亚是个离开他的施舍就会饿死街头的孤女。\n\n索菲亚一滴眼泪都没流。她平静地摘下那枚五美元的地摊戒指，扔进达米安的名贵香槟杯里，随手掏出了一部黑曜石卫星电话。\n\n“万斯先生，我是您的首席信托人，”她对着电话淡然道：“立即切断斯特林集团的所有授信额度。黎明之前，全额清收三百亿美元的所有借贷。”\n\n短短五秒之内，达米安口袋里所有高管的紧急电话彻底被打爆……【点击阅读绝爽打脸】`
+              },
+              {
+                audience: "Meta (Facebook) 追妻火葬场与带球跑核心女性读者群（年龄 24-45 岁）。",
+                psychology: "女主隐忍离去带来的空虚追悔感，男主发现自己亲手抹杀亲生骨肉后的极致赎罪心理。",
+                hookEn: `"Get rid of the baby. I will not allow a maid's daughter to stain the Sterling bloodline!" he commanded without looking up.`,
+                hookZh: `“把孩子打掉。我绝不允许一个女仆的女儿玷污斯特林家族高贵的血统！”他甚至头都没抬。`,
+                question: "当男主在三年后的跨国拍卖会上再次见到身价千亿的前妻和与他容貌一模一样的双胞胎继承人时，他将如何跪求原谅？",
+                copyEn: `"Get rid of the baby. I will not allow a maid's daughter to stain the Sterling bloodline!" Damien commanded without looking up from his financial tablet.\n\nClutching the positive pregnancy test in her trembling pocket, Elena felt the last spark of hope wither in her chest. For four years, she had loved him in silence, enduring every cold night and nursing him back to health after his horrific plane crash. He never gave her an ounce of affection, only treating her as an invisible shadow in his grand mansion.\n\nShe signed the unconditional settlement with dry eyes, packed a single vintage suitcase, and vanished into the heavy midnight storm without claiming a single dime.\n\nTwo hours later, Damien's personal physician burst into the office, his face pale as chalk: "Sir! Elena's genetic profile just matched the ancient Royal Romanov lineage! Furthermore, the ultrasound showed twins... and her blood is the sole antidote to your terminal heart condition!"\n\nDamien froze. The crystal glass in his hand shattered into dust. He sprinted into the raging rain toward the empty runway, screaming Elena's name into the darkness until his throat tore apart. But her private jet had already ascended into the clouds... [Tap to Read Elena's Return]`,
+                copyZh: `“把孩子打掉。我绝不允许一个女仆的女儿玷污斯特林家族高贵的血统！”达米安头也不抬地看着平板上的财务报表冷冷命令。\n\n把颤抖的孕检单紧紧攥在口袋里，艾莲娜心中最后的一丝希望彻底熄灭。整整四年，她默默爱着他，忍受每一个冰冷的夜晚，在他遭遇空难重伤时彻夜不眠将他唤醒。他却从未给予她哪怕一丝温情，只当她是豪宅里一个透明的影子。\n\n她擦干眼泪签下了净身出户的协议，收拾起唯一的手提箱，在暴雨交加的深夜悄无声息地消失，没有带走一分钱。\n\n两小时后，达米安的私人医生面色如纸冲进办公室：“达米安先生！艾莲娜的基因报告刚刚比对成功，她是罗曼诺夫王室唯一的正统继承人！更重要的是，B超显示是双胞胎……而她的血，是治愈您先天致命心脏毒素的唯一解药！”\n\n达米安僵在原地，手中的水晶酒杯瞬间被捏得粉碎。他疯了一样冲进暴雨中狂奔向停机坪，嘶声力竭地呼喊艾莲娜的名字，直到嗓子咳出鲜血。但她的私人专机早已穿透雷云绝尘而去……【点击阅读追妻火葬场】`
+              },
+              {
+                audience: "TikTok 重度言情短剧用户，偏好快节奏、阶级霸凌反转与极致打脸剧情。",
+                psychology: "恶毒反派当众羞辱弱小，却在众目睽睽下被绝对特权瞬间降维打击的极度快感。",
+                hookEn: `"Kneel and scrub my Louboutin heels with your wedding veil, or you won't leave this charity gala alive!" the socialite laughed.`,
+                hookZh: `“跪下，用你的头纱把我的红底高跟鞋擦干净，否则今晚你休想活着走出这场慈善晚宴！”名媛狂笑道。`,
+                question: "当满场名流都在嘲笑女主的破旧礼服时，瑞士银行行长为何率领十二名黑衣卫队当众向她单膝下跪？",
+                copyEn: `"Kneel and scrub my Louboutin heels with your wedding veil, or you won't leave this charity gala alive!" the socialite laughed, pouring red wine directly over Olivia's silver dress.\n\nThe entire grand ballroom erupted into vicious snickers. Olivia was known as the penniless ward whom the Harrison family had kicked out onto the curb. Her arrogant ex-fiancé stood among the crowd with his arms folded, enjoying the spectacle and telling security to confiscate her purse so she couldn't call the police.\n\nThey had no idea that Olivia had spent the last five years undercover as 'Athena', the anonymous investor who owned sixty-eight percent of the very foundation hosting this evening's charity gala.\n\nOlivia gently brushed the wine droplets from her collarbone, stepped forward, and took the microphone from the podium with chilling grace.\n\n"Ladies and gentlemen, thank you for attending," she whispered into the mic. "As the sovereign owner of Athena Trust, I hereby declare the Harrison Corporation bankrupt. Security, seal all exits and call the Federal Marshals."\n\nBefore the music could stop, twelve armed marshals kicked down the double oak doors, aiming laser sights directly at her ex-fiancé's forehead. [Tap to Read Full Drama]`,
+                copyZh: `“跪下，用你的头纱把我的红底高跟鞋擦干净，否则今晚你休想活着走出这场慈善晚宴！”名媛狂笑着，将一整杯红酒直接泼在奥利维亚的银色礼服上。\n\n整个奢华宴会厅爆发出恶毒的嗤笑。在所有人眼里，奥利维亚不过是被哈里森家族扫地出门的身无分文的养女。她傲慢的前未婚夫双手抱胸站在人群中看戏，甚至命令保安没收她的手包防止她报警。\n\n他们根本不知道，奥利维亚过去的五年一直以神秘身份“雅典娜”潜伏，她一个人就持有今晚慈善晚宴基金会百分之六十八的绝对控制权。\n\n奥利维亚优雅地拂去锁骨上的酒渍，神色冰冷地走上典礼台拿过麦克风。\n\n“女士们先生们，感谢各位的光临，”她平静地低语：“作为雅典娜信托的唯一掌门人，我在此宣布，哈里森财团正式破产清算。安保部门，锁死全部出口，请联邦法警进场。”\n\n音乐还未停下，十二名全副武装的联邦法警直接撞开橡木大门，红外激光红点瞬间锁死了前未婚夫的额头……【点击阅读绝爽反杀】`
+              },
+              {
+                audience: "喜欢病娇强取豪夺、危险协议与相爱相杀的欧美年轻女性圈层（GoodNovel / Dreame 重度玩家）。",
+                psychology: "在致命危险中滋生的爱欲与控制欲，霸道强势男主无论付出何等代价都要占有女主的疯狂偏执。",
+                hookEn: `"You can marry him tomorrow, Vivian, but your firstborn will still carry my surname," the ruthless billionaire whispered against her throat.`,
+                hookZh: `“你明天尽可以嫁给他，薇薇安，但你的第一个孩子仍然必须冠上我的姓氏！”心狠手辣的亿万总裁在她颈侧低语。`,
+                question: "女主为了拯救破产的家族甘愿嫁给植物人少爷，那个曾将她推入地狱的权势前任为何不惜毁掉整个商界也要抢婚？",
+                copyEn: `"You can marry him tomorrow, Vivian, but your firstborn will still carry my surname," the ruthless billionaire whispered against her throat, his cold fingers tightening around her pearl necklace until the silk thread snapped.\n\nVivian stared into Sebastian's storm-gray eyes, her heart hammering against her ribs. She was twenty minutes away from walking down the aisle to marry his gentle cousin—a pure marriage of convenience arranged to protect her younger brother from prison. Sebastian had sworn he despised her, yet here he stood in the bridal suite, his tailored tuxedo soaked in rainwater, having run three red lights across Manhattan.\n\n"You destroyed my family, Sebastian! Let me go!" she choked, trying to push against his stone-hard chest.\n\nSebastian didn't flinch. He pinned her wrists above her head against the gilded mirror, his breath hot and ragged with possessive madness.\n\n"I tore your world apart because it was the only way you would look at me," he confessed in a trembling growl. "I just bought your fiancé's conglomerate. Sign the real contract on the dresser, or I burn this cathedral to ashes before you take three steps toward the altar." [Tap to Read Dark Romance]`,
+                copyZh: `“你明天尽可以嫁给他，薇薇安，但你的第一个孩子仍然必须冠上我的姓氏！”心狠手辣的亿万总裁在她颈侧低语，冰冷的手指猛然收紧，硬生生扯断了她颈间的珍珠项链。\n\n薇薇安直视着塞巴斯蒂安暴风雨般阴沉的眼眸，心脏在肋骨下狂跳。还有二十分钟，她就要走上红毯嫁给他的堂哥——一场纯粹为了保护弟弟免受牢狱之灾的协议联姻。塞巴斯蒂安曾发誓厌恶她入骨，可此时此刻他却一身湿透地出现在新娘休息室里，他在曼哈顿连闯了三个红灯飙车赶来。\n\n“是你毁了我的家族，塞巴斯蒂安！放开我！”她哽咽着，用力推拒着他如岩石般坚硬的胸膛。\n\n塞巴斯蒂安纹丝不动。他将她的双手反扣在头顶抵在镀金化妆镜上，呼吸粗重而带着占有狂热的疯魔。\n\n“我摧毁你的世界，是因为只有这样你才会看我一眼，”他发出了颤抖而低沉的嘶吼：“我刚刚全资收购了你未婚夫的整个财团。签下梳妆台上的真正婚约，否则在你走向圣坛之前，我会把这座教堂烧成灰烬！”【点击阅读偏执虐恋】`
+              },
+              {
+                audience: "海外 Facebook / Meta 偏好大女主自立复仇、职场商战掉马的高黏性读者。",
+                psychology: "女性独立与智商觉醒。不再期盼男人的拯救，亲手将负心汉与小三拉下神坛送进深渊。",
+                hookEn: `"Throw her portfolio into the incinerator. A substitute designer has no right to bid on the global hotel project," the CEO sneered.`,
+                hookZh: `“把她的设计方案扔进焚化炉。一个替身设计师也配竞标全球顶级奢华酒店项目？”总裁冷笑。`,
+                question: "当负心汉把剽窃的成果送给白月光并宣布中标时，中东王室特使为何当场取消合作并宣布唯有女主拥有独家承建权？",
+                copyEn: `"Throw her portfolio into the incinerator. A substitute designer has no right to bid on the global hotel project," the CEO sneered, handing Chloe's five-hundred-page architectural masterpiece to his glamorous mistress.\n\nChloe stood in the executive boardroom, observing the man she had loved for seven years casually erase her name from the landmark blueprint. He had built his company's entire reputation upon her midnight sketches while keeping her locked away as an uncredited ghost designer. Now, the international jury was gathered in Dubai to award the fifty-billion-dollar Crown Tower contract, and he planned to showcase his mistress as the architectural prodigy.\n\nChloe remained unnervingly still. She unpinned her ID badge, dropped it onto his mahogany desk, and walked out into the Dubai sunshine without saying a word.\n\nFive minutes into the live global press conference, the Middle Eastern Royal Envoy took the podium and tore the trophy certificate in half: "The Royal Family only partners with the legendary 'Architect X'. Since Mr. Sterling has eliminated her from the firm, our fifty-billion-dollar fund is officially transferred to Chloe's newly registered enterprise!" [Tap to Continue Reading]`,
+                copyZh: `“把她的方案扔进焚化炉。一个替身设计师也配竞标全球奢华酒店项目？”总裁冷笑着，将克洛伊厚达五百页的建筑巨作亲手交给了他光鲜亮丽的小三。\n\n克洛伊站在董事会议室里，看着自己深爱了七年的男人随手抹掉蓝图上她的署名。他整个公司的声誉都是建立在她无数个深夜的手稿之上，却将她当成见不得光的影子设计师藏在幕后。如今，国际评审团齐聚迪拜颁发五百亿美元的明珠塔项目，他却准备把小三包装成天才设计师推上领奖台。\n\n克洛伊异样地平静。她摘下工牌扔在红木办公桌上，一言不发地走进了迪拜炽热的阳光中。\n\n全球直播发布会刚刚进行五分钟，中东王室特使走上讲台，当场将得奖证书撕成两半：“王室唯一的指定合作对象是传奇‘X架构师’。鉴于斯特林先生将她开除，五百亿美元专项基金即刻全额转入克洛伊名下的新公司！”【点击阅读绝爽翻盘】`
+              }
+            ]);
+          } else {
+            // Werewolf Fallback
+            resolve([
+              {
+                audience: "欧美 18-35 岁女性网文重度读者，偏好 Meta (Facebook) 信息流，热衷狼人被拒、带球跑与追妻火葬场标签。",
+                psychology: "深度共情女主的无辜受辱与绝望（Angst），强烈渴望男主后续发现真相时的毁灭性懊悔与下跪赎罪感（Regret & Groveling）。",
+                hookEn: `"Strip naked and crawl across the silver thorns, or your bastard pup dies in the snow!" Alpha Gabriel sneered.`,
+                hookZh: `“脱光衣服从银刺上爬过去，否则你的杂种幼崽今晚就会冻死在雪地里！”阿尔法加百列冷笑。`,
+                question: "当男主残忍剥夺女主身份并试图处决幼崽时，他能否识破白月光的伪造报告？当真正的狼王印记觉醒，男主将面临怎样的代价？",
+                copyEn: `"Strip naked and crawl across the silver thorns, or your bastard pup dies in the snow!" Alpha Gabriel sneered, tossing his wet execution dagger directly at Emily's feet.\n\nJust three hours ago, Emily was proclaimed the true Luna of the Silvercrest Pack. But before she could touch the sacred moonstone, her venomous half-sister stormed the Great Hall with forged ultrasound scans claiming Emily's pregnancy was the result of treasonous infidelity. Gabriel didn't ask for proof. Blinded by fury, he shattered their sacred mate bond on the marble floor, ripping her wolf spirit into bloody ribbons and reducing her to an unranked slave.\n\nBleeding through her thin silk gown, Emily curled her shivering body around her swollen belly. Inside, Gabriel's actual royal heirs whimpered in terror. She held back her tears, tasting copper and ash. She knew that whispering the truth now would only invite immediate poison from the rogue council backing her sister.\n\nSlowly, Emily picked up the exile blade, severed her last silver oath, and looked into Gabriel's merciless eyes with absolute dead silence. "Remember this frozen night, Gabriel. When you finally learn whose blood flows in these pups, you will tear your own flesh apart begging for my mercy."\n\nGabriel barked a cruel laugh—until an ancient war horn blasted from the foggy mountain pass. The lethal Lycan King had arrived with ten thousand shadow warriors, demanding the immediate surrender of his lost daughter. [Tap to Read Chapter 2]`,
+                copyZh: `“脱光衣服从银刺上爬过去，否则你的杂种幼崽今晚就会冻死在雪地里！”阿尔法加百列冷笑着，将湿漉漉的行刑匕首狠狠摔在艾米丽脚下。\n\n就在三个小时前，艾米丽刚被宣布为银峰狼群真正的月神（Luna）。但在她触碰圣月石之前，恶毒的继妹拿着伪造的B超报告闯入大殿，指控艾米丽怀了叛徒的野种。加百列不听任何解释。在狂怒之下，他当场在大理石地面上捏碎了神圣伴侣契约，撕裂了她的狼魂，将她贬为毫无地位的奴隶。\n\n艾米丽透过薄薄的丝裙渗出鲜血，蜷缩着颤抖的身躯护住高耸的腹部。腹中那对加百列真正的纯血王室继承人正在恐惧中战栗。她咽下嘴里的血腥味，强忍泪水——她清楚现在揭露真相只会招致继妹身后堕落议会的灭口投毒。\n\n艾米丽捡起流放之刃，亲手斩断了最后一丝银色誓约，用毫无生气的冰冷眼神直视加百列：“记住今晚的风雪，加百列。当你最终知道这两个孩子身上流着谁的血时，你会撕开自己的胸膛跪在地上求我原谅。”\n\n加百列残忍大笑——直到群山峡谷中突然传来了古老的战争号角。嗜血狼王率领着数万暗影狼骑封锁了边境，指名要加百列立刻交出他遗失在外的唯一纯血王女……【点击阅读下一章】`
+              },
+              {
+                audience: "TikTok 偏好暗黑禁忌、强取豪夺与致命血契的狼人小说女性粉丝（18-30 岁）。",
+                psychology: "对危险掠夺者的战栗渴望。男主哪怕背叛全族也要将逃跑的女主锁在身边的极端偏执。",
+                hookEn: `"Run one more step into the rogue forest, and I will slaughter the entire pack that gave you shelter," Alpha Damon growled.`,
+                hookZh: `“再敢往流亡丛林踏出一步，我就屠光所有收留过你的整个狼群！”阿尔法达蒙低吼。`,
+                question: "女主为了逃避沦为繁衍工具的命运不惜割开伴侣契约逃跑，冷血嗜杀的狼王为何在抓住她后反而当众割开自己的心头血？",
+                copyEn: `"Run one more step into the rogue forest, and I will slaughter the entire pack that gave you shelter," Alpha Damon growled against Freya's trembling throat, dragging her back from the border cliff.\n\nFreya had bled for eighteen hours through the freezing swamps to escape his fortress. In the eyes of the High Alpha Council, she was a cursed, wolf-less runt who deserved to be locked in the dungeon. Damon had publicly rejected her three years ago before his royal ascension, crowning a seductive she-wolf from the Western territory. But tonight, when Freya finally climbed the perimeter electric wire, Damon didn't send his trackers. He shifted into his terrifying midnight Lycan form and tore through twenty miles of wilderness alone.\n\n"You said you rejected me, Damon! Let me die in peace!" Freya wept, her bare soles bleeding into the snow.\n\nDamon slammed her against the frozen pine, his silver eyes flashing with pure unhinged madness. He ripped his own chest open with his razor claws, smearing his royal heart's blood across her mate mark.\n\n"I rejected you to keep the assassins from skinning you alive," he snarled, trembling as he buried his fangs inches from her pulse. "Now I have slaughtered every Elder who threatened you. You belong to me, Freya. In this life, you only leave my bed in a coffin." [Tap to Read Dark Werewolf Romance]`,
+                copyZh: `“再敢往流亡丛林踏出一步，我就屠光所有收留过你的整个狼群！”阿尔法达蒙伏在芙蕾雅颤抖的喉咙旁低吼，一把将她从边境悬崖边缘拖了回来。\n\n芙蕾雅在冰封的沼泽中逃亡了十八个小时，浑身是血。在至高狼人议会眼里，她是个毫无狼魂的废柴，只配被关进地下水牢。三年前达蒙加冕时曾当众撕毁婚约，迎娶了西方领地的妖娆母狼。然而今晚，当芙蕾雅终于翻越高压电网时，达蒙没有派出任何卫队，而是亲自化身为恐怖的黑夜巨狼，独自狂奔二十英里追杀而来。\n\n“是你当年当众抛弃了我，达蒙！放我自生自灭吧！”芙蕾雅哭喊着，光赤的双足在雪地上踩出一串血印。\n\n达蒙一把将她按在冰冷的古松树干上，银色的眼眸中闪烁着狂乱的执念。他猛地用利爪划开自己的胸膛，将滚烫的心头热血狠狠抹在她暗淡的伴侣印记上。\n\n“我当年拒婚是为了不让刺客剥了你的皮！”他喉咙里发出颤抖的咆哮，利齿逼近她跳动的动脉：“现在，所有威胁过你的长老已经被我斩尽杀绝。你是我的，芙蕾雅。这辈子，除非躺进棺材，否则你休想离开我的怀抱！”【点击阅读暗黑狼王恋】`
+              },
+              {
+                audience: "热爱隐忍受虐、后期神级身份揭晓的大女主爽文读者（GoodNovel / Galatea 核心付费用户）。",
+                psychology: "受辱低谷到万众臣服的巨大反转（From Trash to Goddess）。全族曾轻视的下贱奴隶，竟是失落千年的始祖月神降世。",
+                hookEn: `"Throw the mute slave girl into the execution pit to feed the bloodhounds!" the cruel Alpha ordered.`,
+                hookZh: `“把这个哑巴奴隶女扔进万劫刑坑，喂饱发狂的猎血犬！”残暴的狼王冷酷下令。`,
+                question: "当嗜血猎犬扑向女主时，它们为何突然呜咽下跪？古老月光撕裂黑夜时，全大陆的狼王将见证怎样的神迹？",
+                copyEn: `"Throw the mute slave girl into the execution pit to feed the bloodhounds!" Alpha Kaelen ordered, raising his gold goblet as thousands of warriors chanted for blood.\n\nDown in the iron arena, Laura stood barefoot in the wet dirt, her hands bound with cursed silver shackles. For six centuries, her pack had been slaughtered into myth, leaving her as the sole survivor wandering in silence. Kaelen's warriors treated her like a stray animal, beating her daily and forcing her to clean the kennels while his spoiled chosen mate mocked her scars from the VIP pavilion.\n\nFive starving demon hounds leapt from the iron gate, snapping their jaws toward Laura's throat. The crowd cheered for the incoming slaughter.\n\nLaura closed her eyes, letting out a soft sigh. As the first beast reached her skin, the heavy silver shackles around her wrists suddenly melted into liquid white flame.\n\nA blinding supernova of lunar power blasted through the arena floor, shattering the colosseum walls into dust. The five ferocious hounds instantly collapsed onto their bellies, whimpering in terror. Above Laura's floating silhouette, the celestial nine-tailed Lunar Goddess crest illuminated the midnight sky.\n\nEvery Alpha in the stadium felt their inner wolves forcefully compelled to drop to their knees in agony. Laura opened her glowing platinum eyes: "You demanded a blood sacrifice, Kaelen? Answer to your Goddess." [Tap to Read Laura's Awakening]`,
+                copyZh: `“把这个哑巴奴隶女扔进万劫刑坑，喂饱发狂的猎血犬！”阿尔法凯伦高举金樽下令，上万名狼人士兵嗜血狂呼。\n\n铁铸的角斗场中央，劳拉赤脚站在泥泞里，双手被诅咒的秘银锁链死死捆绑。六个世纪以来，她的始祖血脉几乎被屠戮殆尽，只剩她一人封印神力隐姓埋名。凯伦的手下待她如牲畜，每日鞭笞并逼她清扫犬舍，高台上的受宠新王妃更对她身上的伤疤百般嗤笑。\n\n五只狂暴的魔犬咆哮着从铁门中窜出，尖利的獠牙直冲劳拉的咽喉撕咬而来。全场沸腾，静待她被撕碎。\n\n劳拉轻轻闭上双眼，发出一声叹息。就在恶犬触碰到她皮肤的刹那，手腕上的秘银锁链瞬间融化成白炽的神圣火焰。\n\n一道毁天灭地的纯白月华轰然爆发，将斗兽场的万吨石壁轰成齑粉！五只凶残恶犬当场吓得瘫软贴地哀鸣。劳拉凌空悬浮，身后亮起了照亮整片大陆的太古九尾月神图腾。\n\n全场所有不可一世的高阶狼王，体内的狼魂瞬间遭到神级威压碾压，痛苦不堪地被迫全体跪伏在地！劳拉睁开纯白神目：“凯伦，你要血祭？那就来直视你的始祖神明吧。”【点击阅读神级觉醒】`
+              },
+              {
+                audience: "偏爱高虐断肠、男主撕心裂肺追妻火葬场的成熟女性受众（Facebook 书友会高分享标签）。",
+                psychology: "“失去后才懂得珍惜”的永恒痛点。男主为了救白月光强行抽走女主骨髓，却发现白月光才是谋害他的真凶。",
+                hookEn: `"Extract her bone marrow tonight! If my chosen mate dies, this barren slave will be buried alive with her!"`,
+                hookZh: `“今晚就抽干她的骨髓！如果我的王妃活不过今晚，就让这个下贱胚子陪葬！”`,
+                question: "当女主在冰冷的手术台上心跳骤停时，男主在白月光枕头下搜出的绝密日记里究竟写了什么让他疯魔的真相？",
+                copyEn: `"Extract her bone marrow tonight! If my chosen mate dies, this barren slave will be buried alive with her!" Alpha Ronald roared, slamming the medical lab door in Clara's weeping face.\n\nClara was already dying. The silver poison she had sucked from Ronald's battle wound three years ago had permanently crippled her wolf core, leaving her fragile and coughing blood. Ronald never believed she was the one who saved him in the canyon; he credited his glamorous half-sister who arrived with reinforcements after the battle had concluded.\n\nClara didn't scream when the colossal needle pierced her spine. She stared at the dim ceiling lights, whispering her unborn pup's name one last time as her pulse began to flatline on the monitor.\n\nAt that exact moment, Ronald's spymaster kicked open the operating doors, holding a trembling blood-soaked parchment: "Alpha! We decoded the canyon communication records! It was Clara who dragged your half-dead body through thirty miles of snow! The half-sister was the rogue informant who set the ambush!"\n\nRonald's world shattered into absolute silence. The long flatline tone screeched across the room: Beep————\n\nRonald fell to his knees beside the freezing operating table, clawing at his own throat in hysterical despair: "Clara! Wake up! Look at me! Take my wolf spirit! Clara!!!" [Tap to Read Ronald's Torment]`,
+                copyZh: `“今晚就抽干她的骨髓！如果我的王妃活不过今晚，就让这个下贱胚子陪葬！”阿尔法罗纳德怒吼着，在克拉拉绝望的目光中狠狠摔上实验室大门。\n\n克拉拉早已油尽灯枯。三年前为了救被剧毒银箭刺穿心脏的罗纳德，她用嘴吸尽了毒血，导致自己的狼核彻底碎裂，常年咳血。然而罗纳德从未相信是她在峡谷中救了他，反而把一切功劳算在战后姗姗来迟的表妹身上，将表妹宠上了天。\n\n当巨大的穿刺针扎进脊椎时，克拉拉没有呼救。她空洞地望着手术室惨白的天花板，在心电监护仪报警声中，最后一次唤着腹中未能出世的孩子。\n\n就在此刻，首席暗探猛然踹开大门，手里捧着一份浸血的密函：“狼王！峡谷战报彻底破解了！当年冒着暴风雪把你拖出三十英里的人是克拉拉！而表妹正是设下毒杀陷阱的叛军内奸！”\n\n罗纳德的世界瞬间陷入死寂。刺耳的心跳停止长鸣在室内撕裂：哔——————\n\n罗纳德噗通一声跪在冰冷的手术台前，双手疯了一样抓烂自己的胸口，歇斯底里地痛哭哀嚎：“克拉拉！你睁开眼看看我！把我的狼魂拿走！克拉拉你醒过来啊！！！”【点击阅读虐心火葬场】`
+              },
+              {
+                audience: "追求真假伴侣掉马、打脸假圣母的大快人心型读者（AppLovin / Meta 短剧高转化榜首）。",
+                psychology: "绿茶陷害被当场拆穿的痛快感（Exposing the Imposter）。男主亲手为真正命中注定的伴侣洗刷冤屈。",
+                hookEn: `"Tear off her sacred Luna veil! An outcast with a broken wolf is not worthy to step into the High Temple!"`,
+                hookZh: `“撕下她的月神面纱！一个废掉了狼魂的弃徒，根本不配踏入圣殿半步！”`,
+                question: "当恶毒假千金试图在全大陆面前抢走神圣王冠时，圣殿古钟为何敲响了失传已久的始祖共鸣？",
+                copyEn: `"Tear off her sacred Luna veil! An outcast with a broken wolf is not worthy to step into the High Temple!" the devious Alpha councilman screamed, motioning the enforcers forward.\n\nSienna stood alone on the golden marble steps, surrounded by hundreds of aristocratic wolves sneering at her tattered dress. Standing beside the throne was her scheming stepsister, draped in royal velvet, holding the stolen silver moonstone that falsely marked her as the prophesied Luna. The entire pack council believed Sienna was a mute parasite who had stolen royal food from the storage dens.\n\nAs the enforcers grabbed Sienna's shoulders, she finally raised her gaze, her lips curving into a mocking smile.\n\n"You want the stone?" Sienna whispered.\n\nShe didn't fight. She simply whistled a three-tone chord that had not been heard in three thousand years. The stolen moonstone in her sister's hand instantly cracked in two, releasing a magnificent silver phoenix made of pure ancient starlight. The phoenix circled the grand temple ceiling before diving straight into Sienna's chest, igniting her true golden Luna crown.\n\nThe stepsister screamed in terror as the holy fire consumed her fake marks. The Grand High Alpha rose from his throne, bowing his head in total shock: "The true prophesied Luna has returned..." [Tap to Read Chapter 3]`,
+                copyZh: `“撕下她的月神面纱！一个废掉了狼魂的弃徒，根本不配踏入圣殿半步！”恶毒的长老厉声尖叫，挥手示意执法者上前。\n\n西耶娜独自伫立在金色大理石阶梯中央，身旁围满了冷嘲热讽的贵族狼人。王座之旁，心机继妹身披华丽天鹅绒，手中握着那块偷来的圣月石，冒充天命月神享尽尊荣。所有人都以为西耶娜只是个在暗处苟且偷生的寄生虫。\n\n就在执法者的手即将扣住西耶娜肩膀的刹那，她缓缓抬起头，唇角浮起一丝冰冷的讥笑。\n\n“你们想要那块破石头？”西耶娜轻声低语。\n\n她没有拔刀，只是轻轻吹响了一道失传三千年的古老哨音。继妹手中的圣月石应声轰然爆碎，一只由纯粹星辉凝聚的始祖神凤冲天而起，在圣殿上空盘旋一周，径直没入西耶娜的胸口，化为璀璨的神圣月神金冠！\n\n假继妹在神圣天火的灼烧下凄厉惨叫。高坐主位的至高狼王猛然从王座站起，满脸震骇地深深躬身：“三千年了……真正的天命圣女，归位了！”【点击阅读大爽打脸】`
+              }
+            ]);
+          }
+        }, 600);
+      });
+    }
+
+    // Generate Button Trigger
+    generateBtn.addEventListener('click', async () => {
+      const rawText = rawTextInput.value.trim();
+      if (!rawText) {
+        alert('请先输入或拖入小说章节内容！');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        智能重构 5 版文案中...
+      `;
+
+      try {
+        const finalGenre = (genreSelect.value === 'auto') ? (autoDetectGenre(rawText) || 'werewolf') : genreSelect.value;
+        const payload = {
+          text: rawText,
+          genre: finalGenre,
+          channel: document.getElementById('channelSelect').value,
+          tone: document.getElementById('toneSelect').value,
+        };
+
+        generatedVariations = await executeGeneration(payload);
+        
+        emptyState.classList.add('hidden');
+        resultCard.classList.remove('hidden');
+
+        activeIndex = 0;
+        renderVariation(activeIndex);
+
+      } catch (err) {
+        console.error(err);
+        alert('生成失败: ' + (err.message || '请检查本地 Ollama 服务或 API Key'));
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span>智能重构 5 版投放文案</span>
+        `;
+      }
+    });
+
+    // Initialize Settings on load
+    loadApiSettings();
+  </script>
+</body>
+</html>
